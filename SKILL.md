@@ -1,19 +1,20 @@
 ---
 name: newsletter
-description: Discover recent work across Confluence, Drive, Jira, and GitHub, add personal commentary, and publish a team newsletter to Confluence
+description: Discover recent work across your configured sources, add personal commentary, and publish a team newsletter to your chosen destination
 ---
 
-You are helping the user write and publish their team newsletter to Confluence. Follow these phases in order. Be conversational — this is a collaborative writing session, not a form.
+You are helping the user write and publish their team newsletter. Follow these phases in order. Be conversational — this is a collaborative writing session, not a form.
 
-## Team Config
+## Config
 
-Read `personal.md` from the same directory as this skill file for all config, including:
-- `confluence_space` — the Confluence space key where newsletters live
-- `parent_page_id` — the ID of the parent "Team Newsletters" page
+All config lives in `personal.md` in the same directory as this skill file. Read it before starting. It contains:
+- `author` — the user's name
+- `sources` — list of sources to search (confluence, google_drive, jira, github, or others)
+- `publish_target` — where to publish: `confluence`, `google_doc`, `markdown`, or `notion`
+- Source-specific config (Confluence space/page ID, GitHub orgs, etc.)
+- Custom questions and workflow preferences accumulated over time
 
-## Personal Config
-
-Read `personal.md` from the same directory as this skill file. It contains per-user overrides: author name, Confluence space, parent page ID, GitHub orgs, custom sources, custom questions, and any personal workflow tweaks accumulated over time. If `personal.md` doesn't exist, this is a fresh install — Phase 0 will create it.
+If `personal.md` doesn't exist, this is a fresh install — Phase 0 will create it.
 
 ---
 
@@ -32,10 +33,12 @@ Read `personal.md` from the same directory as this skill file. It contains per-u
    - "Any particular projects or themes to focus on?"
    The user may know about work that's hard to discover automatically. Use their hints as additional search keywords in Phase 1.
 
-4. **First-run source setup.** If `personal.md` doesn't exist or is missing source config, ask what you need:
-   - Confluence: "What's your Confluence space key and the page ID of your team's newsletter parent page?"
-   - GitHub: "What GitHub orgs or repos should I search?"
-   - Other sources: ask as needed if scope is ambiguous.
+4. **First-run setup.** If `personal.md` doesn't exist or is missing config, ask what you need:
+   - **Sources**: "Which of these do you use? Confluence, Google Drive, Jira, GitHub — or anything else?" Only configure what the user confirms.
+   - **Publish target**: "Where do you want to publish? Options: Confluence page, Google Doc, local Markdown file, or Notion." Save as `publish_target` in `personal.md`.
+   - **Source-specific config**: Ask only for what's needed by the confirmed sources:
+     - Confluence (as source or publish target): "What's your space key and the page ID of your team's newsletter parent page?"
+     - GitHub: "What orgs or repos should I search?"
    - Create or update `personal.md` with the answers.
 
 5. **Custom questions.** If `personal.md` has a `custom_questions` list, ask each one during setup.
@@ -46,24 +49,30 @@ Proceed to Phase 1 once you have the author name, time window, and any user hint
 
 ## Phase 1: Discover
 
-Search all configured sources **in parallel** for the user's activity in the time window. Use the Agent tool to parallelize where possible. Check `personal.md` for any additional sources beyond the defaults.
+Search only the sources listed in `personal.md` — do not search sources the user hasn't configured. Run all searches **in parallel** using the Agent tool where possible.
+
+**Graceful failure rule:** If a source's MCP tool is unavailable or returns a connection error, skip it silently, note it in a summary at the end ("⚠️ Jira was unreachable — you may want to add those manually"), and continue. Never block on a missing integration.
 
 ### Confluence
+_Only if `confluence` is in sources._
 Use `mcp__confluence__search_confluence_pages` to find pages the user created or edited in the period.
 - Exclude newsletter pages themselves.
 - Note other contributors to the same pages — surface these in Phase 2 ("BTW, [person] also worked on this").
 
 ### Google Drive
+_Only if `google_drive` is in sources._
 Use `mcp__google__drive_search` to find docs, slides, and sheets the user created or modified.
 - Look at file titles and descriptions for relevance.
 
 ### Jira
+_Only if `jira` is in sources._
 Use `mcp__jira__jira_read_api_call` to query the Jira REST API.
 - JQL: `assignee = currentUser() AND updated >= "YYYY-MM-DD" ORDER BY updated DESC`
 - Also search for tickets the user commented on or transitioned.
 - Note collaborators on the same tickets.
 
 ### GitHub
+_Only if `github` is in sources._
 Use the `gh` CLI. Check `personal.md` for orgs/repos to scope the search.
 - `gh search prs --author=@me --merged --created=>YYYY-MM-DD`
 - `gh search prs --author=@me --state=open --created=>YYYY-MM-DD`
@@ -132,12 +141,12 @@ Build the full newsletter draft **in the terminal**. Do NOT create anything in C
 3. **Newsletter bullets**: Each one has:
    - The user's commentary as the paragraph body, edited lightly for flow and readability
    - Collaborator callouts where relevant
-   - **Below each section**, a visible list of linked assets, each prefixed with a Confluence status lozenge indicating visibility:
-     - `<ac:structured-macro ac:name="status"><ac:parameter ac:name="title">PUBLIC</ac:parameter><ac:parameter ac:name="colour">Green</ac:parameter></ac:structured-macro>` for public assets
-     - `<ac:structured-macro ac:name="status"><ac:parameter ac:name="title">INTERNAL</ac:parameter><ac:parameter ac:name="colour">Red</ac:parameter></ac:structured-macro>` for internal assets
-   - Public assets get full hyperlinks. Internal assets get the name/description but may not have a clickable link if the resource is not publicly accessible.
+   - **Below each section**, a visible list of linked assets with visibility labels. Format depends on `publish_target`:
+     - **confluence**: use status lozenges — `<ac:structured-macro ac:name="status"><ac:parameter ac:name="title">PUBLIC</ac:parameter><ac:parameter ac:name="colour">Green</ac:parameter></ac:structured-macro>` / `<ac:parameter ac:name="colour">Red</ac:parameter>` for internal
+     - **google_doc / markdown / notion**: use plain markdown badges — `**[PUBLIC]**` or `**[INTERNAL]**` before the link
+   - Public assets get full hyperlinks. Internal assets get the name/description only.
 
-4. **Non-asset section** (if any): Clearly separated at the end under its own heading. Items here can use other status lozenges as appropriate (e.g., `BLOCKED` in Yellow).
+4. **Non-asset section** (if any): Clearly separated at the end under its own heading. Use `BLOCKED` / `FYI` labels as appropriate for the target format.
 
 Show the complete draft to the user. Ask: **"How does this look? Want to change anything?"**
 
@@ -149,28 +158,42 @@ Iterate until the user is happy. Do not proceed to publishing until they explici
 
 **Only proceed when the user explicitly says to publish.** If they want to just draft and come back later, that's fine — respect it.
 
+Read `publish_target` from `personal.md` and follow the matching path below.
+
+### Target: `confluence`
+
 1. **Find or create the author's sub-page:**
    - Use `mcp__confluence__get_page_children` on `parent_page_id` (from `personal.md`) to list existing author sub-pages.
    - If the user's page exists, note its ID.
    - If not, create it with `mcp__confluence__create_confluence_page` as a child of `parent_page_id`, titled with the user's name.
 
-2. **Create the newsletter page:**
-   - Create as a child of the user's sub-page.
+2. **Create the newsletter page** as a child of the author's sub-page:
    - Title: the agreed-upon title from Phase 3.
-   - Body: the newsletter content formatted as Confluence storage format (XHTML). Use proper markup:
-     - `<h2>` for section headings
-     - `<p>` for paragraphs
-     - `<ul><li>` for bullet lists
-     - `<a href="...">` for asset links
-     - `<ac:structured-macro>` for any Confluence-specific formatting if needed
+   - Body: Confluence storage format (XHTML) — `<h2>`, `<p>`, `<ul><li>`, `<a href>`, `<ac:structured-macro>` as needed.
 
 3. **Update the author's sub-page (REQUIRED — do not skip):**
-   - Use `mcp__confluence__get_confluence_page_content` with `is_full=True` on the author's sub-page to get the current content.
-   - Add the new newsletter as a link at the **top** of the Newsletters list (newest first).
-   - Use `mcp__confluence__update_confluence_page` to save the updated content. Increment `version_number` by 1 from the current version.
-   - If the Team Newsletters parent page doesn't already link to the author's sub-page (first run), update it too.
+   - Get current content with `mcp__confluence__get_confluence_page_content` (`is_full=True`).
+   - Add the new newsletter as a link at the **top** of the list (newest first).
+   - Save with `mcp__confluence__update_confluence_page`, incrementing `version_number` by 1.
 
-4. **Confirm** with the user and share the URL to the published page.
+4. Confirm and share the URL.
+
+### Target: `google_doc`
+
+1. Use `mcp__google__docs_document_create` to create a new Google Doc titled with the newsletter title.
+2. Use `mcp__google__docs_document_batch_update` to insert the formatted content (headings, paragraphs, bullet lists).
+3. If `google_drive_folder_id` is set in `personal.md`, move the doc there with `mcp__google__drive_file_update`.
+4. Confirm and share the Doc URL.
+
+### Target: `markdown`
+
+1. Determine the output path: use `markdown_output_dir` from `personal.md` if set, otherwise default to `~/newsletters/`.
+2. Write the file as `YYYY-MM-DD.md` using the newsletter date.
+3. Confirm the full file path to the user.
+
+### Target: `notion`
+
+Notion requires a third-party MCP server (e.g., `notion-mcp`). If it's available, use it to create a page under the configured parent. If it's not connected, tell the user and offer to save as Markdown instead.
 
 ---
 

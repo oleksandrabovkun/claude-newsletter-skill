@@ -3,21 +3,39 @@
 ## Author
 name: Your Name
 
+## Sources
+# Add only the sources you actually use. Unconfigured sources are skipped.
+# If an MCP for a source isn't connected, it will be skipped gracefully.
+sources:
+  - confluence
+  - google_drive
+  - jira
+  - github
+
+## Publish target
+# Where to publish the finished newsletter.
+# Options: confluence | google_doc | markdown | notion
+publish_target: confluence
+
 ## Confluence
+# Required if confluence is in sources or publish_target is confluence.
 confluence_space: your-space-key
 parent_page_id: 123456789  # ID of your team's "Team Newsletters" page
 
+## Google Doc
+# Required if publish_target is google_doc.
+# google_drive_folder_id: abc123  # optional: folder to put the doc in
+
+## Markdown
+# Required if publish_target is markdown.
+# markdown_output_dir: ~/newsletters/
+
 ## GitHub
+# Required if github is in sources.
 orgs:
   - your-org
 repos:
   - your-org/your-repo
-
-## Sources
-- confluence
-- google_drive
-- jira
-- github
 
 ## Manual sources (ask each run — can't be auto-searched)
 # - LinkedIn: https://linkedin.com/in/you — ask "any LinkedIn posts this week?"
