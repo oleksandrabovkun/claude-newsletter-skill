@@ -3,6 +3,11 @@
 ## Author
 name: Your Name
 
+## Mode
+# Set on first run. Controls the entire flow.
+# Options: devrel | field
+mode: devrel
+
 ## Sources
 # Add only the sources you actually use. Unconfigured sources are skipped.
 # If an MCP for a source isn't connected, it will be skipped gracefully.
@@ -11,16 +16,16 @@ sources:
   - google_drive
   - jira
   - github
+  # - salesforce   # field mode: requires a Salesforce MCP connection
 
 ## Publish target
-# Where to publish the finished newsletter.
 # Options: confluence | google_doc | markdown | notion
 publish_target: confluence
 
 ## Confluence
 # Required if confluence is in sources or publish_target is confluence.
 confluence_space: your-space-key
-parent_page_id: 123456789  # ID of your team's "Team Newsletters" page
+parent_page_id: 123456789
 
 ## Google Doc
 # Required if publish_target is google_doc.
@@ -46,6 +51,31 @@ repos:
 #   - "Any blog posts or external writing this week?"
 #   - "Any conference talks or events to mention?"
 
+# ─── Field mode config (mode: field only) ────────────────────────────────────
+
+## Accounts
+# Regular accounts to always check coverage for.
+# If an account has no activity in a period, the skill will flag it.
+# accounts:
+#   - Acme Corp
+#   - Beta Inc
+#   - Gamma LLC
+
+## Anonymize accounts
+# Accounts that should always be anonymized in the published version.
+# anonymize_accounts:
+#   - Acme Corp: "a Fortune 500 retail customer"
+#   - Beta Inc: "a mid-market fintech customer"
+
+## Manager digest
+# Generate a short 4-6 bullet digest alongside the full newsletter.
+# manager_digest: false
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 ## Notes
 # Add any personal workflow preferences here.
 # This file is updated automatically by Phase 5 after each run.
+
+## Last run
+# last_newsletter_date: YYYY-MM-DD  # set automatically after each publish
