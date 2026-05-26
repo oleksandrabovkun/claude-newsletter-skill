@@ -1,0 +1,33 @@
+# Personal Newsletter Config — Your Name
+
+## Author
+name: Your Name
+
+## Confluence
+confluence_space: your-space-key
+parent_page_id: 123456789  # ID of your team's "Team Newsletters" page
+
+## GitHub
+orgs:
+  - your-org
+repos:
+  - your-org/your-repo
+
+## Sources
+- confluence
+- google_drive
+- jira
+- github
+
+## Manual sources (ask each run — can't be auto-searched)
+# - LinkedIn: https://linkedin.com/in/you — ask "any LinkedIn posts this week?"
+# - YouTube: ask "any videos published this week?"
+
+## Custom questions
+# custom_questions:
+#   - "Any blog posts or external writing this week?"
+#   - "Any conference talks or events to mention?"
+
+## Notes
+# Add any personal workflow preferences here.
+# This file is updated automatically by Phase 5 after each run.
